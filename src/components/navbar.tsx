@@ -14,6 +14,8 @@ const Navbar = () => {
 
         if (!token) {
             setIsLoggedIn(false);
+        } else {
+            
         }
     }, []);
     
