@@ -1,8 +1,19 @@
 import React from 'react'
 import { Navbar, Footer } from '@/components';
 import { Button, TextInput, Label } from 'flowbite-react';
+import { useRouter } from 'next/router';
 
 const Login = () => {
+  const router = useRouter();
+
+  const onAdminLoginClick = () => {
+    router.push('/admin/login');
+  }
+
+  const onStaffLoginClick = () => {
+    router.push("/staff/login");
+  }
+
   return (
     <>
         <Navbar />
@@ -23,8 +34,8 @@ const Login = () => {
               </div>
               {/* Links to Admin and Staff Login */}
               <div className="flex flex-row gap-4 justify-center items-center mt-5">
-                <Button color="green">Admin Login</Button>
-                <Button color="green">Staff Login</Button>
+                <Button color="green" onClick={onAdminLoginClick}>Admin Login</Button>
+                <Button color="green" onClick={onStaffLoginClick}>Staff Login</Button>
               </div>
             </form>
           </div>
