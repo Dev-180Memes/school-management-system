@@ -51,10 +51,10 @@ const Navbar = () => {
             <FlowNavbar.Toggle />
         </div>
         <FlowNavbar.Collapse>
-            <FlowNavbar.Link href="#">Home</FlowNavbar.Link>
-            <FlowNavbar.Link href="#">Admin Login</FlowNavbar.Link>
-            <FlowNavbar.Link href="#">Staff Login</FlowNavbar.Link>
-            <FlowNavbar.Link href="#">Student Login</FlowNavbar.Link>
+            <FlowNavbar.Link href="/">Home</FlowNavbar.Link>
+            <FlowNavbar.Link href="/admin/login">Admin Login</FlowNavbar.Link>
+            <FlowNavbar.Link href="/staff/login">Staff Login</FlowNavbar.Link>
+            <FlowNavbar.Link href="/student/login">Student Login</FlowNavbar.Link>
         </FlowNavbar.Collapse>
     </FlowNavbar>
   )
