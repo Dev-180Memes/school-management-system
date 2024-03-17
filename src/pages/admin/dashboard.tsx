@@ -55,6 +55,49 @@ const Dashboard = () => {
                         </Table.Body>
                     </Table>
                 </Tabs.Item>
+                <Tabs.Item title="Add Admins" icon={FaUser}>
+                    <div className="w-full max-w items-center justify-center">
+                        <form className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+                            <h2 className="text-2xl font-bold mb-6">Add Admin</h2>
+                            <div className="mb-4">
+                                <TextInput type="text" placeholder="Full Name" />
+                            </div>
+                            <div className="mb-4">
+                                <TextInput type="email" placeholder="Email" />
+                            </div>
+                            <div className="mb-4">
+                                <TextInput type="text" placeholder="Position" />
+                            </div>
+                            <div className="mb-6">
+                                <TextInput type="password" placeholder="******************" />
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <Button color="green">Add Admin</Button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <Table>
+                        <Table.Head>
+                            <Table.HeadCell>Full Name</Table.HeadCell>
+                            <Table.HeadCell>Email</Table.HeadCell>
+                            <Table.HeadCell>Position</Table.HeadCell>
+                            <Table.HeadCell>
+                                <span className="sr-only">Delete</span>
+                            </Table.HeadCell>
+                        </Table.Head>
+                        <Table.Body>
+                            <Table.Row>
+                                <Table.Cell>John Doe</Table.Cell>
+                                <Table.Cell>staff@email.com</Table.Cell>
+                                <Table.Cell>Mathematics</Table.Cell>
+                                <Table.Cell>
+                                    <Button color="red">Delete</Button>
+                                </Table.Cell>
+                            </Table.Row>
+                        </Table.Body>
+                    </Table>
+                </Tabs.Item>
                 <Tabs.Item title="Add Student" icon={FaGraduationCap}>
                     {/* Add Student */}
                     <div className="w-full max-w items-center justify-center">
