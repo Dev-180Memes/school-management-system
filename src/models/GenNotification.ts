@@ -1,7 +1,7 @@
 import mongoose, { Document, ObjectId } from "mongoose";
 
 interface IGenNotification extends Document {
-    notification: String;
+    notification: string;
     teacherId: ObjectId;
 }
 

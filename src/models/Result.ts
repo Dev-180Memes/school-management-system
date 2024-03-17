@@ -3,9 +3,9 @@ import mongoose, { Document, ObjectId } from "mongoose";
 interface IResult extends Document {
     courseId: ObjectId;
     studentId: ObjectId;
-    score: Number;
-    grade: String;
-    comment: String;
+    score: number;
+    grade: string;
+    comment: string;
 }
 
 const ResultSchema = new mongoose.Schema({

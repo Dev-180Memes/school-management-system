@@ -1,10 +1,10 @@
 import mongoose, { Document } from "mongoose";
 
 interface IAdmin extends Document {
-    name: String;
-    email: String;
-    password: String;
-    position: String;
+    name: string;
+    email: string;
+    password: string;
+    position: string;
 }
 
 const AdminSchema = new mongoose.Schema({

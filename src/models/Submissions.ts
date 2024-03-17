@@ -2,8 +2,8 @@ import mongoose, { Document, ObjectId } from "mongoose";
 
 interface ISubmissions extends Document {
     assignmentId: ObjectId;
-    answer: String;
-    score: Number;
+    answer: string;
+    score: number;
     submittedBy: ObjectId;
 }
 

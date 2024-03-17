@@ -2,7 +2,7 @@ import mongoose, { Document, ObjectId } from "mongoose";
 
 interface IAssignment extends Document {
     courseId: ObjectId;
-    question: String;
+    question: string;
     dueDAte: Date;
 }
 

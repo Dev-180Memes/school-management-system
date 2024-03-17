@@ -1,10 +1,10 @@
 import mongoose, { Document } from "mongoose";
 
 interface ITeacher extends Document {
-    name: String;
-    email: String;
-    className: String;
-    password: String;
+    name: string;
+    email: string;
+    className: string;
+    password: string;
 }
 
 const TeacherSchema = new mongoose.Schema({

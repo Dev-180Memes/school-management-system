@@ -1,7 +1,7 @@
 import mongoose, { Document, ObjectId } from "mongoose";
 
 interface ICourse extends Document {
-    courseTitle: String;
+    courseTitle: string;
     teacherId: ObjectId;
 }
 

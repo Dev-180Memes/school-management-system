@@ -1,9 +1,9 @@
 import mongoose, { Document, ObjectId } from "mongoose";
 
 interface IStudent extends Document {
-    name: String;
-    email: String;
-    password: String;
+    name: string;
+    email: string;
+    password: string;
     teacherId: ObjectId;
 }
 

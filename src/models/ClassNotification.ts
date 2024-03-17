@@ -1,7 +1,7 @@
 import mongoose, { Document, ObjectId } from "mongoose";
 
 interface IClassNotification extends Document {
-    notification: String;
+    notification: string;
     postedBy: ObjectId;
 }
 
