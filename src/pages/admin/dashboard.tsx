@@ -14,6 +14,13 @@ interface Admins {
     position: string
 }
 
+interface Staff {
+    _id: string,
+    name: string,
+    email: string,
+    className: string
+}
+
 const Dashboard = () => {
     const [adminName, setAdminName] = useState<string>("");
     const [adminEmail, setAdminEmail] = useState<string>("");
@@ -206,7 +213,7 @@ const Dashboard = () => {
                 body: JSON.stringify(data)
             })
 
-            if (response.status === 200) {
+            if (response.status === 201) {
                 const result = await response.json();
                 setNotificationContent("");
                 toast.success(result.message);
@@ -216,6 +223,99 @@ const Dashboard = () => {
             }
         }
     }
+
+    const [teacherName, setTeacherName] = useState<string>("");
+    const [teacherEmail, setTeacherEmail] = useState<string>("");
+    const [teacherClassName, setTeacherClassName] = useState<string>("");
+    const [teacherPassword, setTeacherPassword] = useState<string>("");
+    const [isSubmittingTeacher, setIsSubmittingTeacher] = useState<boolean>(false);
+    const [isDeletingTeacher, setIsDeletingTeacher] = useState<boolean>(false);
+    const [teachers, setTeachers] = useState<Staff[]>([]);
+
+    const handleCreateTeacher = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setIsSubmittingTeacher(true);
+
+        const token: string | null = localStorage.getItem("token");
+
+        const name: string = teacherName;
+        const email: string = teacherEmail;
+        const className: string = teacherClassName;
+        const password: string = teacherPassword;
+
+        const data = {
+            name,
+            email,
+            className,
+            password
+        }
+
+        const response = await fetch('/api/staff/addStaff', {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify(data)
+        })
+
+        if (response.status === 201) {
+            const result = await response.json();
+            setTeachers(prev => [...prev, result.staff]);
+            setIsSubmittingTeacher(false);
+            setTeacherEmail("");
+            setTeacherName("");
+            setTeacherPassword("");
+            setTeacherClassName("");
+            toast.success(result.message);
+        } else {
+            const result = await response.json();
+            setIsSubmittingTeacher(false);
+            toast.error(result.message);
+        }
+    }
+
+    useEffect(() => {
+        const token: string | null = localStorage.getItem("token");
+        if (!token) {
+            toast.error("You need to Login");
+            router.push("/admin/login");
+        } else if (token) {
+            const decodedToken = decodeJWT(token) as { exp: number, id?: string, name?: string, email?: string, position?: string, account?: string }
+            if (decodedToken.account !== "admin") {
+                toast.error("You are not authorized to view this page");
+                router.push("/admin/login");
+            }
+
+            if (decodedToken && decodedToken.exp * 1000 < Date.now()) {
+                localStorage.removeItem("token")
+                toast.error("Token has expired, Please Login");
+                router.push("/admin/login");
+            }
+        }
+
+        // Fetch all teachers
+        const fetchTeachers = async () => {
+            const response = await fetch('/api/staff/addStaff', {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+            })
+
+            if (response.status === 200) {
+                const result = await response.json();
+                setTeachers(result.staffs);
+            } else {
+                const result = await response.json();
+                toast.error(result.message);
+            }
+        }
+
+        fetchTeachers();
+    
+    }, [router])
 
   return (
     <>
@@ -227,22 +327,26 @@ const Dashboard = () => {
                 <Tabs.Item active title="Add Staff" icon={FaChalkboardTeacher}>
                     {/* Add Teacher */}
                     <div className="w-full max-w items-center justify-center">
-                        <form className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+                        <form className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4" onSubmit={handleCreateTeacher}>
                             <h2 className="text-2xl font-bold mb-6">Add Staff</h2>
                             <div className="mb-4">
-                                <TextInput type="text" placeholder="Full Name" />
+                                <TextInput type="text" placeholder="Full Name" value={teacherName} onChange={(e) => setTeacherName(e.target.value)} />
                             </div>
                             <div className="mb-4">
-                                <TextInput type="email" placeholder="Email" />
+                                <TextInput type="email" placeholder="Email" value={teacherEmail} onChange={(e) => setTeacherEmail(e.target.value)} />
                             </div>
                             <div className="mb-4">
-                                <TextInput type="text" placeholder="Class Name" />
+                                <TextInput type="text" placeholder="Class Name" value={teacherClassName} onChange={(e) => setTeacherClassName(e.target.value)} />
                             </div>
                             <div className="mb-6">
-                                <TextInput type="password" placeholder="******************" />
+                                <TextInput type="password" placeholder="******************" value={teacherPassword} onChange={(e) => setTeacherPassword(e.target.value)} />
                             </div>
                             <div className="flex items-center justify-between">
-                                <Button color="green">Add Staff</Button>
+                                {isSubmittingTeacher ? (
+                                    <Button color={"green"} disabled>Adding Staff ...</Button>
+                                ) : (
+                                    <Button color={"green"} type='submit'>Add Staff</Button>
+                                )}
                             </div>
                         </form>
                     </div>
@@ -258,14 +362,20 @@ const Dashboard = () => {
                             </Table.HeadCell>
                         </Table.Head>
                         <Table.Body>
-                            <Table.Row>
-                                <Table.Cell>John Doe</Table.Cell>
-                                <Table.Cell>staff@email.com</Table.Cell>
-                                <Table.Cell>Mathematics</Table.Cell>
-                                <Table.Cell>
-                                    <Button color="red">Delete</Button>
-                                </Table.Cell>
-                            </Table.Row>
+                            {teachers.map((teacher, index) => (
+                                <Table.Row key={index}>
+                                    <Table.Cell>{teacher.name}</Table.Cell>
+                                    <Table.Cell>{teacher.email}</Table.Cell>
+                                    <Table.Cell>{teacher.className}</Table.Cell>
+                                    <Table.Cell>
+                                        {isDeletingTeacher ? (
+                                            <Button color={"red"} disabled>Deleting...</Button>
+                                        ) : (
+                                            <Button color={"red"} type='submit' onClick={() => handleDeleteAdmin(teacher._id)}>Delete</Button>
+                                        )}
+                                    </Table.Cell>
+                                </Table.Row>
+                            ))}
                         </Table.Body>
                     </Table>
                 </Tabs.Item>
