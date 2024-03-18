@@ -133,6 +133,90 @@ const Dashboard = () => {
         }
     }
 
+    const [oldPassword, setOldPassword] = useState<string>("");
+    const [newPassword, setNewPassword] = useState<string>("");
+    const [confirmPassword, setConfirmPassword] = useState<string>("");
+
+    const handleChangePassword = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+
+        const token: string | null = localStorage.getItem("token");
+
+        if (token) {
+            const decodedToken = decodeJWT(token) as { exp: number, id?: string, name?: string, email?: string, position?: string, account?: string }
+
+            const oldPass: string = oldPassword;
+            const newPass: string = newPassword;
+            const confirmPass: string = confirmPassword;
+
+            if (newPass !== confirmPass) {
+                toast.error("New Password and Confirm Password do not match");
+                return;
+            }
+
+            const data = {
+                oldPassword: oldPass,
+                newPassword: newPass
+            }
+
+            const response = await fetch(`/api/admin/IdOperations/${decodedToken.id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(data)
+            })
+
+            if (response.status === 200) {
+                const result = await response.json();
+                setOldPassword("");
+                setNewPassword("");
+                setConfirmPassword("");
+                toast.success(result.message);
+            } else {
+                const result = await response.json();
+                toast.error(result.message);
+            }
+        }
+    }
+
+    const [notificationContent, setNotificationContent] = useState<string>("");
+
+    const handleNotificationPosting = async () => {
+        const token: string | null = localStorage.getItem("token")
+
+        if (token) {
+            const decodedToken = decodeJWT(token) as { exp: number, id?: string, name?: string, email?: string, position?: string, account?: string }
+
+            const notification: string = notificationContent;
+            const postedBy: string | undefined = decodedToken.id;
+
+            const data = {
+                notification,
+                postedBy
+            }
+
+            const response = await fetch('/api/admin/notification', {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(data)
+            })
+
+            if (response.status === 200) {
+                const result = await response.json();
+                setNotificationContent("");
+                toast.success(result.message);
+            } else {
+                const result = await response.json();
+                toast.error(result.message);
+            }
+        }
+    }
+
   return (
     <>
         <ToastContainer />
@@ -288,13 +372,13 @@ const Dashboard = () => {
                 </Tabs.Item>
                 <Tabs.Item title="Post Notification" icon={FaEnvelope}>
                     <div className="w-full max-w items-center justify-center">
-                        <form action="" className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+                        <form action="" className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4" onSubmit={handleNotificationPosting}>
                             <h2 className='text-2xl font-bold mb-6'>Post Notifications</h2>
                             <div className="mb-6">
-                                <TextInput type='text' placeholder='Notification Content' />
+                                <TextInput type='text' placeholder='Notification Content' value={notificationContent} onChange={(e) => setNotificationContent(e.target.value)} />
                             </div>
                             <div className="flex items-center jusify-between">
-                                <Button color='green'>Post Notification</Button>
+                                <Button color='green' type='submit'>Post Notification</Button>
                             </div>
                         </form>
                     </div>
@@ -302,19 +386,19 @@ const Dashboard = () => {
                 <Tabs.Item title="Manage Profile" icon={FaUser}>
                     {/* Change Password */}
                     <div className="w-full max-w items-center justify-center">
-                        <form action="" className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+                        <form action="" className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4" onSubmit={handleChangePassword}>
                             <h2 className='text-2xl font-bold mb-6'>Change Password</h2>
                             <div className="mb-6">
-                                <TextInput type='password' placeholder='Old Password' />
+                                <TextInput type='password' placeholder='Old Password' value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} />
                             </div>
                             <div className="mb-6">
-                                <TextInput type='password' placeholder='New Password' />
+                                <TextInput type='password' placeholder='New Password' value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
                             </div>
                             <div className="mb-6">
-                                <TextInput type='password' placeholder='Confirm Password' />
+                                <TextInput type='password' placeholder='Confirm Password' value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
                             </div>
                             <div className="flex items-center justify-between">
-                                <Button color='green'>Change Password</Button>
+                                <Button color='green' type='submit'>Change Password</Button>
                             </div>
                         </form>
                     </div>

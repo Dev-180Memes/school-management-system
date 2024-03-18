@@ -2,7 +2,7 @@ import mongoose, { Document, ObjectId } from "mongoose";
 
 interface IGenNotification extends Document {
     notification: string;
-    teacherId: ObjectId;
+    postedBy: ObjectId;
 }
 
 const GenNotificationSchema = new mongoose.Schema({
@@ -10,7 +10,7 @@ const GenNotificationSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    teacherId: {
+    postedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Admin",
     }
