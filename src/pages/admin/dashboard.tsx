@@ -48,7 +48,8 @@ const Dashboard = () => {
             const response = await fetch('/api/admin/addAdmin', {
                 method: "GET",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
                 },
             })
 
@@ -68,6 +69,8 @@ const Dashboard = () => {
         e.preventDefault();
         setIsSubmittingAdmin(true);
 
+        const token: string | null = localStorage.getItem("token");
+
         const name: string = adminName;
         const email: string = adminEmail;
         const position: string = adminPosition;
@@ -83,7 +86,8 @@ const Dashboard = () => {
         const response = await fetch('/api/admin/addAdmin', {
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
             },
             body: JSON.stringify(data)
         })
@@ -106,10 +110,14 @@ const Dashboard = () => {
 
     const handleDeleteAdmin = async (id: string) => {
         setIsDeletingAdmin(true);
+
+        const token: string | null = localStorage.getItem("token");
+        
         const response = await fetch(`/api/admin/IdOperations/${id}`, {
             method: "DELETE",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
             }
         })
 

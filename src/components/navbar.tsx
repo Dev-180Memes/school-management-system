@@ -5,19 +5,44 @@ import {
     Dropdown, 
     Button
 } from 'flowbite-react';
+import decodeJWT from '@/utils/decodeToken';
+import { useRouter } from 'next/router';
+import Link from 'next/link';
 
 const Navbar = () => {
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [name, setName] = useState<string>("");
+    const [email, setEmail] = useState<string>("");
+    const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+    const [dashboardLink, setDashboardLink] = useState<string>("");
+    const router = useRouter();
 
     useEffect(() => {
-        const token = localStorage.getItem("token");
+        const token: string | null = localStorage.getItem("token");
 
         if (!token) {
             setIsLoggedIn(false);
-        } else {
-            
+        } else if (token) {
+            const decodedToken = decodeJWT(token) as { exp: number, id?: string, name?: string, email?: string, position?: string, account?: string }
+            setName(decodedToken.name || "");
+            setEmail(decodedToken.email || "");
+
+            if (decodedToken.account === "admin") {
+                setDashboardLink("/admin/dashboard")
+            } else if (decodedToken.account === "staff") {
+                setDashboardLink("/staff/dashboard")
+            } else if (decodedToken.account === "student") {
+                setDashboardLink("/student/dashboard")
+            }
+
+            setIsLoggedIn(true);
         }
     }, []);
+
+    const handleLogout = () => {
+        localStorage.removeItem("token");
+        setIsLoggedIn(false);
+        router.push("/")
+    }
     
 
   return (
@@ -35,18 +60,20 @@ const Navbar = () => {
                 }
                 >
                     <Dropdown.Header>
-                        <span className="block text-sm">Student Name</span>
-                        <span className="block truncate text-sm font-medium">student@email.com</span>
+                        <span className="block text-sm">{name}</span>
+                        <span className="block truncate text-sm font-medium">{email}</span>
                     </Dropdown.Header>
-    
-                    <Dropdown.Item>Dashboard</Dropdown.Item>
-                    <Dropdown.Item>Settings</Dropdown.Item>
-                    <Dropdown.Item>Notifications</Dropdown.Item>
+
+                    <Link href={dashboardLink}>
+                        <Dropdown.Item>Dashboard</Dropdown.Item>
+                    </Link>
                     <Dropdown.Divider />
-                    <Dropdown.Item>Sign out</Dropdown.Item>
+                    <Dropdown.Item onClick={handleLogout}>Sign out</Dropdown.Item>
                 </Dropdown>  
             ) : (
-                <Button color="green">Login</Button>
+                <Link href={"student/login"}>
+                    <Button color="green">Login</Button>
+                </Link>
             )}
             <FlowNavbar.Toggle />
         </div>
