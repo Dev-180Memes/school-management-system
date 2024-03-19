@@ -21,6 +21,13 @@ interface Staff {
     className: string
 }
 
+interface Student {
+    _id: string,
+    name: string,
+    email: string,
+    teacher: string
+}
+
 const Dashboard = () => {
     const [adminName, setAdminName] = useState<string>("");
     const [adminEmail, setAdminEmail] = useState<string>("");
@@ -317,6 +324,148 @@ const Dashboard = () => {
     
     }, [router])
 
+    const handleDeleteTeacher = async (id: string) => {
+        setIsDeletingTeacher(true);
+
+        const token: string | null = localStorage.getItem("token");
+        
+        const response = await fetch(`/api/staff/IdOperations/${id}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            }
+        })
+
+        if (response.status === 200) {
+            const data = await response.json();
+            setIsDeletingTeacher(false);
+            setTeachers(prev => prev.filter(teacher => teacher._id != id));
+            toast.success(data.message);
+        } else {
+            const data = await response.json();
+            setIsDeletingTeacher(false);
+            toast.error(data.message);
+        }
+    }
+
+    const [studentName, setStudentName] = useState<string>("");
+    const [studentEmail, setStudentEmail] = useState<string>("");
+    const [studentTeacher, setStudentTeacher] = useState<string>("");
+    const [studentPassword, setStudentPassword] = useState<string>("");
+    const [isSubmittingStudent, setIsSubmittingStudent] = useState<boolean>(false);
+    const [isDeletingStudent, setIsDeletingStudent] = useState<boolean>(false);
+    const [students, setStudents] = useState<Student[]>([]);
+
+    const handleCreateStudent = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setIsSubmittingStudent(true);
+
+        const token: string | null = localStorage.getItem("token");
+
+        const name: string = studentName;
+        const email: string = studentEmail;
+        const teacher: string = studentTeacher;
+        const password: string = studentPassword;
+
+        const data = {
+            name,
+            email,
+            teacherId: teacher,
+            password
+        }
+
+        const response = await fetch('/api/student/addStudent', {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify(data)
+        })
+
+        if (response.status === 201) {
+            const result = await response.json();
+            setStudents(prev => [...prev, result.student]);
+            setIsSubmittingStudent(false);
+            setStudentEmail("");
+            setStudentName("");
+            setStudentPassword("");
+            setStudentTeacher("");
+            toast.success(result.message);
+        } else {
+            const result = await response.json();
+            setIsSubmittingStudent(false);
+            toast.error(result.message);
+        }
+    }
+
+    const handleDeleteStudent = async (id: string) => {
+        setIsDeletingStudent(true);
+
+        const token: string | null = localStorage.getItem("token");
+        
+        const response = await fetch(`/api/student/IdOperations/${id}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            }
+        })
+
+        if (response.status === 200) {
+            const data = await response.json();
+            setIsDeletingStudent(false);
+            setStudents(prev => prev.filter(student => student._id != id));
+            toast.success(data.message);
+        } else {
+            const data = await response.json();
+            setIsDeletingStudent(false);
+            toast.error(data.message);
+        }
+    }
+
+    useEffect(() => {
+        const token: string | null = localStorage.getItem("token");
+        if (!token) {
+            toast.error("You need to Login");
+            router.push("/admin/login");
+        } else if (token) {
+            const decodedToken = decodeJWT(token) as { exp: number, id?: string, name?: string, email?: string, position?: string, account?: string }
+            if (decodedToken.account !== "admin") {
+                toast.error("You are not authorized to view this page");
+                router.push("/admin/login");
+            }
+
+            if (decodedToken && decodedToken.exp * 1000 < Date.now()) {
+                localStorage.removeItem("token")
+                toast.error("Token has expired, Please Login");
+                router.push("/admin/login");
+            }
+        }
+
+        // Fetch all students
+        const fetchStudents = async () => {
+            const response = await fetch('/api/student/addStudent', {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+            })
+
+            if (response.status === 200) {
+                const result = await response.json();
+                setStudents(result.students);
+            } else {
+                const result = await response.json();
+                toast.error(result.message);
+            }
+        }
+
+        fetchStudents();
+    }, [router])
+
   return (
     <>
         <ToastContainer />
@@ -371,7 +520,7 @@ const Dashboard = () => {
                                         {isDeletingTeacher ? (
                                             <Button color={"red"} disabled>Deleting...</Button>
                                         ) : (
-                                            <Button color={"red"} type='submit' onClick={() => handleDeleteAdmin(teacher._id)}>Delete</Button>
+                                            <Button color={"red"} type='submit' onClick={() => handleDeleteTeacher(teacher._id)}>Delete</Button>
                                         )}
                                     </Table.Cell>
                                 </Table.Row>
@@ -435,25 +584,32 @@ const Dashboard = () => {
                 <Tabs.Item title="Add Student" icon={FaGraduationCap}>
                     {/* Add Student */}
                     <div className="w-full max-w items-center justify-center">
-                        <form className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+                        <form className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4" onSubmit={handleCreateStudent}>
                             <h2 className="text-2xl font-bold mb-6">Add Student</h2>
                             <div className="mb-4">
-                                <TextInput type="text" placeholder="Full Name" />
+                                <TextInput type="text" placeholder="Full Name" value={studentName} onChange={(e) => setStudentName(e.target.value)} />
                             </div>
                             <div className="mb-4">
-                                <TextInput type="email" placeholder="Email" />
+                                <TextInput type="email" placeholder="Email" value={studentEmail} onChange={(e) => setStudentEmail(e.target.value)} />
                             </div>
                             <div className="mb-4">
-                                <Select>
-                                    <option>Mr. Teacher</option>
-                                    <option>Ms. Teacher</option>
+                                <Select value={studentTeacher} onChange={(e) => setStudentTeacher(e.target.value)}>
+                                    <option value="">Select Teacher</option>
+                                    {/* Show all teachers */}
+                                    {teachers.map((teacher, index) => (
+                                        <option key={index} value={teacher._id}>{teacher.name}</option>
+                                    ))}
                                 </Select>
                             </div>
                             <div className="mb-6">
-                                <TextInput type="password" placeholder="******************" />
+                                <TextInput type="password" placeholder="******************" value={studentPassword} onChange={(e) => setStudentPassword(e.target.value)} />
                             </div>
                             <div className="flex items-center justify-between">
-                                <Button color="green">Add Student</Button>
+                                {isSubmittingStudent ? (
+                                    <Button color={"green"} disabled>Adding Student ...</Button>
+                                ) : (
+                                    <Button color={"green"} type='submit'>Add Student</Button>
+                                )}
                             </div>
                         </form>
                     </div>
@@ -469,14 +625,20 @@ const Dashboard = () => {
                             </Table.HeadCell>
                         </Table.Head>
                         <Table.Body>
-                            <Table.Row>
-                                <Table.Cell>John Doe</Table.Cell>
-                                <Table.Cell>student@email.com</Table.Cell>
-                                <Table.Cell>Mr. Teacher</Table.Cell>
-                                <Table.Cell>
-                                    <Button color="red">Delete</Button>
-                                </Table.Cell>
-                            </Table.Row>
+                            {students.map((student, index) => (
+                                <Table.Row key={index}>
+                                    <Table.Cell>{student.name}</Table.Cell>
+                                    <Table.Cell>{student.email}</Table.Cell>
+                                    <Table.Cell>{student.teacher}</Table.Cell>
+                                    <Table.Cell>
+                                        {isDeletingStudent ? (
+                                            <Button color={"red"} disabled>Deleting...</Button>
+                                        ) : (
+                                            <Button color={"red"} type='submit' onClick={() => handleDeleteStudent(student._id)}>Delete</Button>
+                                        )}
+                                    </Table.Cell>
+                                </Table.Row>
+                            ))}
                         </Table.Body>
                     </Table>
                 </Tabs.Item>
