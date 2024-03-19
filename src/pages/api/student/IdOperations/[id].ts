@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { Student } from '@/models';
+import { Student, Course } from '@/models';
 import db from '@/utils/connectDb';
 import bcrypt from "bcryptjs";
 import validateJwt from '@/utils/validateToken';

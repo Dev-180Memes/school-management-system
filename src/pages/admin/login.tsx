@@ -1,14 +1,31 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Navbar, Footer } from '@/components';
 import { Button, TextInput, Label } from 'flowbite-react';
 import { useRouter } from 'next/navigation';
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import decodeJWT from '@/utils/decodeToken';
 
 const Login = () => {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      // decode token and see if it's a staff
+      const decodedToken = decodeJWT(token) as { exp: number, id?: string, name?: string, email?: string, position?: string, account?: string }
+
+      if (decodedToken && decodedToken.exp * 1000 < Date.now()) {
+        localStorage.removeItem("token")
+        toast.error("Token has expired, Please Login");
+        router.push("/admin/login");
+      } else if (decodedToken && decodedToken.account === "staff") {
+        router.push("/admin/dashboard");
+      }
+    }
+  }, [router]);
 
   const onStudentLoginClick = () => {
     router.push('/student/login');

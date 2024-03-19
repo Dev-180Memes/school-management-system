@@ -43,6 +43,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
                 id: student._id,
                 name: student.name,
                 email: student.email,
+                teacherId: student.teacherId,
                 account: "student"
             }, JWT_SECRET, {
                 expiresIn: "24h"

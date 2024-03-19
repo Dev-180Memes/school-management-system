@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Navbar, Footer } from '@/components'
 import { 
   Tabs, 
@@ -11,10 +11,218 @@ import {
 } from "flowbite-react";
 import { FaBook, FaFile, FaEnvelope, FaUser } from 'react-icons/fa';
 import { BsBoxes, BsStar } from 'react-icons/bs';
+import { ToastContainer, toast } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
+import decodeJWT from '@/utils/decodeToken';
+import { useRouter } from 'next/router';
+
+interface Courses {
+  _id: string,
+  courseTitle: string,
+  teacherId: string
+}
 
 const Dashboard = () => {
+  const [courseTitle, setCourseTitle] = useState<string>("");
+  const [courses, setCourses] = useState<Courses[]>([]);
+  const [isSubmittingCourse, setIsSubmittingCourse] = useState<boolean>(false);
+  const [isDeletingCourse, setIsDeletingCourse] = useState<boolean>(false);
+  const router = useRouter()
+
+  const handleCreateCourse = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmittingCourse(true)
+
+    const token: string | null = localStorage.getItem("token");
+
+    if (token) {
+      const decodedToken = decodeJWT(token) as { exp: number, id?: string, name?: string, email?: string, position?: string, account?: string }
+
+      const course: string = courseTitle;
+      const teacherId: string | undefined = decodedToken.id;
+
+      const data = {
+        courseTitle: course,
+        teacherId
+      }
+
+      const response = await fetch('/api/staff/courses', {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(data)
+      })
+
+      if (response.status === 201) {
+        const result = await response.json();
+        setCourseTitle("")
+        setCourses(prev => [...prev, result.course]);
+        setIsSubmittingCourse(false);
+        toast.success(result.message);
+      } else {
+        const result = await response.json();
+        setIsSubmittingCourse(false);
+        toast.error(result.message);
+      }
+    }
+  }
+
+  const handleDeleteCourse = async (id: string) => {
+    setIsDeletingCourse(true);
+
+    const token: string | null = localStorage.getItem("token");
+
+    const response = await fetch(`/api/staff/Idoperations/courses/${id}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      }
+    })
+
+    if (response.status === 200) {
+      const data = await response.json();
+      setIsDeletingCourse(false);
+      setCourses(prev => prev.filter(course => course._id != id));
+      toast.success(data.message);
+    } else {
+      const data = await response.json();
+      setIsDeletingCourse(false);
+      toast.error(data.message);
+    }
+  }
+
+  useEffect(() => {
+    const token: string | null = localStorage.getItem("token");
+
+    if (!token) {
+      toast.error("You need to Login");
+      router.push("/admin/login");
+    } else if (token) {
+      const decodedToken = decodeJWT(token) as { exp: number, id?: string, name?: string, email?: string, position?: string, account?: string }
+
+      if (decodedToken.account !== "admin") {
+        toast.error("You are not authorized to view this page");
+        router.push("/admin/login");
+      }
+
+      if (decodedToken && decodedToken.exp * 1000 < Date.now()) {
+        localStorage.removeItem("token")
+        toast.error("Token has expired, Please Login");
+        router.push("/admin/login");
+      }
+
+      const fetchCourse = async () => {
+        const response = await fetch(`/api/staff/IdOperations/courses/${decodedToken.id}`,{
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          }
+        })
+
+        if (response.status === 200) {
+          const result = await response.json();
+          setCourses(result.courses);
+        } else {
+          const result = await response.json();
+          toast.error(result.message);
+        }
+      }
+
+      fetchCourse();
+    }
+  }, [router])
+
+  const [oldPassword, setOldPassword] = useState<string>("");
+  const [newPassword, setNewPassword] = useState<string>("");
+  const [confirmPassword, setConfirmPassword] = useState<string>("");
+
+  const handleChangePassword = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const token: string | null = localStorage.getItem("token");
+
+    if (token) {
+      const decodedToken = decodeJWT(token) as { exp: number, id?: string, name?: string, email?: string, position?: string, account?: string }
+
+      const oldPass: string = oldPassword;
+      const newPass: string = newPassword;
+      const confirmPass: string = confirmPassword;
+
+      if (newPass !== confirmPass) {
+        toast.error("New Password and Confirm Password do not match");
+        return;
+      }
+
+      const data = {
+        oldPassword: oldPass,
+        newPassword: newPass
+      }
+
+      const response = await fetch(`/api/staff/IdOperations/${decodedToken.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(data)
+      })
+
+      if (response.status === 200) {
+        const result = await response.json();
+        setOldPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+        toast.success(result.message);
+      } else {
+        const result = await response.json();
+        toast.error(result.message);
+      }
+    }
+  }
+
+  const [notificationContent, setNotificationContent] = useState<string>("");
+
+  const handleNotificationPosting = async () => {
+    const token: string | null = localStorage.getItem("token")
+
+    if (token) {
+      const decodedToken = decodeJWT(token) as { exp: number, id?: string, name?: string, email?: string, position?: string, account?: string }
+
+      const notification: string = notificationContent;
+      const postedBy: string | undefined = decodedToken.id;
+
+      const data = {
+        notification,
+        postedBy
+      }
+
+      const response = await fetch('/api/admin/notification', {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(data)
+      })
+
+      if (response.status === 201) {
+        const result = await response.json();
+        setNotificationContent("");
+        toast.success(result.message);
+      } else {
+        const result = await response.json();
+        toast.error(result.message);
+      }
+    }
+  }
+
   return (
     <>
+        <ToastContainer />
         <Navbar />
         <div className="flex flex-col min-h-screen p-5">
           <h1 className="text-2xl font-bold mb-6">Staff Dashboard</h1>
@@ -22,13 +230,13 @@ const Dashboard = () => {
                 <Tabs.Item active title="Manage Courses" icon={FaBook}>
                   {/* Add Course */}
                   <div className="w-full max-w items-center justify-center">
-                    <form action="" className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+                    <form action="" className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4" onSubmit={handleCreateCourse}>
                       <h2 className='text-2xl font-bold mb-6'>Add Course</h2>
                       <div className="mb-6">
-                        <TextInput type='text' placeholder='Course Name' />
+                        <TextInput type='text' placeholder='Course Name' value={courseTitle} onChange={(e) => setCourseTitle(e.target.value)} />
                       </div>
                       <div className="flex items-center justify-between">
-                        <Button color='green'>Add Course</Button>
+                        <Button color='green' type='submit'>Add Course</Button>
                       </div>
                     </form>
                   </div>
