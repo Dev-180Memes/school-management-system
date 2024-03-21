@@ -17,13 +17,16 @@ const Login = () => {
       // decode token and see if it's a staff
       const decodedToken = decodeJWT(token) as { exp: number, id?: string, name?: string, email?: string, position?: string, account?: string }
 
-      if (decodedToken && decodedToken.exp * 1000 < Date.now()) {
-        localStorage.removeItem("token")
-        toast.error("Token has expired, Please Login");
-        router.push("/admin/login");
-      } else if (decodedToken && decodedToken.account === "staff") {
+      if (decodedToken && decodedToken.account === "admin") {
+        if (decodedToken && decodedToken.exp * 1000 < Date.now()) {
+          localStorage.removeItem("token")
+          toast.error("Token has expired, Please Login");
+          return
+        }
+
         router.push("/admin/dashboard");
       }
+
     }
   }, [router]);
 

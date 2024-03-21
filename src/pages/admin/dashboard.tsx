@@ -196,8 +196,12 @@ const Dashboard = () => {
     }
 
     const [notificationContent, setNotificationContent] = useState<string>("");
+    const [isSendingNotification, setIsSendingNotification] = useState<boolean>(false);
 
-    const handleNotificationPosting = async () => {
+    const handleNotificationPosting = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setIsSendingNotification(true);
+
         const token: string | null = localStorage.getItem("token")
 
         if (token) {
@@ -223,9 +227,11 @@ const Dashboard = () => {
             if (response.status === 201) {
                 const result = await response.json();
                 setNotificationContent("");
+                setIsSendingNotification(false);
                 toast.success(result.message);
             } else {
                 const result = await response.json();
+                setIsSendingNotification(false);
                 toast.error(result.message);
             }
         }
@@ -650,7 +656,11 @@ const Dashboard = () => {
                                 <TextInput type='text' placeholder='Notification Content' value={notificationContent} onChange={(e) => setNotificationContent(e.target.value)} />
                             </div>
                             <div className="flex items-center jusify-between">
-                                <Button color='green' type='submit'>Post Notification</Button>
+                                {isSendingNotification ? (
+                                    <Button color='green' disabled>Posting Notification ...</Button>
+                                ) : (
+                                    <Button color='green' type='submit'>Post Notification</Button>
+                                )}
                             </div>
                         </form>
                     </div>

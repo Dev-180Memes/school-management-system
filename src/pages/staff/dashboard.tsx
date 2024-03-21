@@ -22,7 +22,24 @@ interface Courses {
   teacherId: string
 }
 
+interface StudentInterface {
+  _id: string,
+  name: string,
+  email: string,
+  teacher: string
+}
+
+interface ResultInterface {
+  _id: string,
+  courseTitle: string,
+  studentName: string,
+  score: number,
+  grade: string,
+  comment: string
+}
+
 const Dashboard = () => {
+  const [students, setStudents] = useState<StudentInterface[]>([]);
   const [courseTitle, setCourseTitle] = useState<string>("");
   const [courses, setCourses] = useState<Courses[]>([]);
   const [isSubmittingCourse, setIsSubmittingCourse] = useState<boolean>(false);
@@ -74,7 +91,7 @@ const Dashboard = () => {
 
     const token: string | null = localStorage.getItem("token");
 
-    const response = await fetch(`/api/staff/Idoperations/courses/${id}`, {
+    const response = await fetch(`/api/staff/IdOperations/courses/${id}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
@@ -99,19 +116,19 @@ const Dashboard = () => {
 
     if (!token) {
       toast.error("You need to Login");
-      router.push("/admin/login");
+      router.push("/staff/login");
     } else if (token) {
       const decodedToken = decodeJWT(token) as { exp: number, id?: string, name?: string, email?: string, position?: string, account?: string }
 
-      if (decodedToken.account !== "admin") {
+      if (decodedToken.account !== "staff") {
         toast.error("You are not authorized to view this page");
-        router.push("/admin/login");
+        router.push("/staff/login");
       }
 
       if (decodedToken && decodedToken.exp * 1000 < Date.now()) {
         localStorage.removeItem("token")
         toast.error("Token has expired, Please Login");
-        router.push("/admin/login");
+        router.push("/staff/login");
       }
 
       const fetchCourse = async () => {
@@ -132,13 +149,33 @@ const Dashboard = () => {
         }
       }
 
+      const fetchStudents = async () => {
+        const response = await fetch(`/api/student/IdOperations/${decodedToken.id}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          }
+        })
+
+        if (response.status === 200) {
+          const result = await response.json();
+          setStudents(result.students);
+        } else {
+          const result = await response.json();
+          toast.error(result.message);
+        }
+      }
+
       fetchCourse();
+      fetchStudents();
     }
   }, [router])
 
   const [oldPassword, setOldPassword] = useState<string>("");
   const [newPassword, setNewPassword] = useState<string>("");
   const [confirmPassword, setConfirmPassword] = useState<string>("");
+  const [isChangingPassword, setIsChangingPassword] = useState<boolean>(false);
 
   const handleChangePassword = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -185,8 +222,12 @@ const Dashboard = () => {
   }
 
   const [notificationContent, setNotificationContent] = useState<string>("");
+  const [isPostingNotification, setIsPostingNotification] = useState<boolean>(false);
 
-  const handleNotificationPosting = async () => {
+  const handleNotificationPosting = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsPostingNotification(true);
+
     const token: string | null = localStorage.getItem("token")
 
     if (token) {
@@ -200,7 +241,7 @@ const Dashboard = () => {
         postedBy
       }
 
-      const response = await fetch('/api/admin/notification', {
+      const response = await fetch('/api/staff/notification/send', {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -212,13 +253,95 @@ const Dashboard = () => {
       if (response.status === 201) {
         const result = await response.json();
         setNotificationContent("");
+        setIsPostingNotification(false);
         toast.success(result.message);
       } else {
         const result = await response.json();
+        setIsPostingNotification(false);
         toast.error(result.message);
       }
     }
   }
+
+  const [resultCourseId, setResultCourseId] = useState<string>("");
+  const [resultStudentId, setResultStudentId] = useState<string>("");
+  const [resultScore, setResultScore] = useState<string>("");
+  const [resultComment, setResultComment] = useState<string>("");
+  const [isUploadingResult, setIsUploadingResult] = useState<boolean>(false);
+  const [results, setResults] = useState<ResultInterface[]>([]);
+
+  const handleResultUpload = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsUploadingResult(true);
+
+    const token: string | null = localStorage.getItem("token")
+
+    if (token) {
+      const courseId: string = resultCourseId;
+      const studentId: string = resultStudentId;
+      const score: number = parseInt(resultScore);
+      const comment: string = resultComment;
+
+      const data = {
+        courseId,
+        studentId,
+        score,
+        comment
+      }
+
+      const response = await fetch('/api/staff/result/result', {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(data)
+      })
+
+      if (response.status === 201) {
+        const result = await response.json();
+        setResultCourseId("");
+        setResultStudentId("");
+        setResultScore("");
+        setResultComment("");
+        setIsUploadingResult(false);
+        setResults(prev => [...prev, result.student])
+        toast.success(result.message);
+      } else {
+        const result = await response.json();
+        setIsUploadingResult(false);
+        toast.error(result.message);
+      }
+    }
+  }
+
+  useEffect(() => {
+    const token: string | null = localStorage.getItem("token");
+
+    if (token) {
+      const decodedToken = decodeJWT(token) as { exp: number, id?: string, name?: string, email?: string, position?: string, account?: string }
+
+      const fetchResults = async () => {
+        const response = await fetch(`/api/staff/result/${decodedToken.id}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          }
+        })
+
+        if (response.status === 200) {
+          const result = await response.json();
+          setResults(result.results);
+        } else {
+          const result = await response.json();
+          toast.error(result.message)
+        }
+      }
+
+      fetchResults();
+    }
+  }, []);
 
   return (
     <>
@@ -236,7 +359,11 @@ const Dashboard = () => {
                         <TextInput type='text' placeholder='Course Name' value={courseTitle} onChange={(e) => setCourseTitle(e.target.value)} />
                       </div>
                       <div className="flex items-center justify-between">
-                        <Button color='green' type='submit'>Add Course</Button>
+                        {isSubmittingCourse ? (
+                          <Button color='green' disabled>Adding...</Button>
+                        ) : (
+                          <Button color='green' type='submit'>Add Course</Button>
+                        )}
                       </div>
                     </form>
                   </div>
@@ -250,39 +377,53 @@ const Dashboard = () => {
                       </Table.HeadCell>
                     </Table.Head>
                     <Table.Body>
-                      <Table.Row>
-                        <Table.Cell>Mathematics</Table.Cell>
-                        <Table.Cell>
-                          <Button color='red'>Delete</Button>
-                        </Table.Cell>
-                      </Table.Row>
+                      {courses.map(course => (
+                        <Table.Row key={course._id}>
+                          <Table.Cell>{course.courseTitle}</Table.Cell>
+                          <Table.Cell>
+                            {isDeletingCourse ? (
+                              <Button color='red' disabled>Deleting...</Button>
+                            ) : (
+                              <Button color='red' onClick={() => handleDeleteCourse(course._id)}>Delete</Button>
+                            )}
+                          </Table.Cell>
+                        </Table.Row>
+                      ))}
                     </Table.Body>
                   </Table>
                 </Tabs.Item>
                 <Tabs.Item title="Upload Student Result" icon={FaFile}>
                   <div className="w-full max-w items-center justify-center">
-                    <form action="" className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+                    <form action="" className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4" onSubmit={handleResultUpload} >
                       <h2 className='text-2xl font-bold mb-6'>Upload Student Result</h2>
                       <div className="mb-6">
-                        <Select>
-                          <option value='1'>John Doe</option>
-                          <option value='2'>Jane Doe</option>
+                        <Select value={resultStudentId} onChange={(e) => setResultStudentId(e.target.value)}>
+                          <option value="">Select Student</option>
+                          {students.map(student => (
+                            <option key={student._id} value={student._id}>{student.name}</option>
+                          ))}
                         </Select>
                       </div>
                       <div className="mb-6">
-                        <Select>
-                          <option value='1'>Mathematics</option>
-                          <option value='2'>English</option>
+                        <Select value={resultCourseId} onChange={(e) => setResultCourseId(e.target.value)}>
+                          <option value="">Select Course</option>
+                          {courses.map(course => (
+                            <option key={course._id} value={course._id}>{course.courseTitle}</option>
+                          ))}
                         </Select>
                       </div>
                       <div className="mb-6">
-                        <TextInput type='text' placeholder='Score' />
+                        <TextInput type='text' placeholder='Score' value={resultScore} onChange={(e) => setResultScore(e.target.value)} />
                       </div>
                       <div className="mb-6">
-                        <TextInput type='text' placeholder="Teacher's Comment"/>
+                        <TextInput type='text' placeholder="Teacher's Comment" value={resultComment} onChange={(e) => setResultComment(e.target.value)}/>
                       </div>
                       <div className="flex items-center justify-between">
-                        <Button color='green'>Upload Result</Button>
+                        {isUploadingResult ? (
+                          <Button disabled color="green">Uploading...</Button>
+                        ) : (
+                          <Button color="green" type='submit'>Upload Result</Button>
+                        )}
                       </div>
                     </form>
                   </div>
@@ -299,16 +440,15 @@ const Dashboard = () => {
                       </Table.HeadCell>
                     </Table.Head>
                     <Table.Body>
-                      <Table.Row>
-                        <Table.Cell>John Doe</Table.Cell>
-                        <Table.Cell>Mathematics</Table.Cell>
-                        <Table.Cell>80</Table.Cell>
-                        <Table.Cell>A</Table.Cell>
-                        <Table.Cell>Good</Table.Cell>
-                        <Table.Cell>
-                          <Button color='red'>Delete</Button>
-                        </Table.Cell>
-                      </Table.Row>
+                      {results.map(result => (
+                        <Table.Row key={result._id}>
+                          <Table.Cell>{result.studentName}</Table.Cell>
+                          <Table.Cell>{result.courseTitle}</Table.Cell>
+                          <Table.Cell>{result.score}</Table.Cell>
+                          <Table.Cell>{result.grade}</Table.Cell>
+                          <Table.Cell>{result.comment}</Table.Cell>
+                        </Table.Row>
+                      ))}
                     </Table.Body>
                   </Table>
                 </Tabs.Item>
@@ -400,13 +540,17 @@ const Dashboard = () => {
                 </Tabs.Item>
                 <Tabs.Item title="Post Notifications" icon={FaEnvelope}>
                   <div className="w-full max-w items-center justify-center">
-                    <form action="" className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+                    <form action="" className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4" onSubmit={handleNotificationPosting}>
                       <h2 className='text-2xl font-bold mb-6'>Post Notifications</h2>
                       <div className="mb-6">
-                        <TextInput type='text' placeholder='Notification Content' />
+                        <TextInput type='text' placeholder='Notification Content' value={notificationContent} onChange={(e) => setNotificationContent(e.target.value)} />
                       </div>
                       <div className="flex items-center jusify-between">
-                        <Button color='green'>Post Notification</Button>
+                        {isPostingNotification ? (
+                          <Button disabled color={'green'}>Posting...</Button>
+                        ) : (
+                          <Button color={"green"} type='submit'>Post Notification</Button>
+                        )}
                       </div>
                     </form>
                   </div>
@@ -414,19 +558,23 @@ const Dashboard = () => {
                 <Tabs.Item title="Manage Profile" icon={FaUser}>
                   {/* Change Password */}
                   <div className="w-full max-w items-center justify-center">
-                    <form action="" className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+                    <form action="" className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4" onSubmit={handleChangePassword}>
                       <h2 className='text-2xl font-bold mb-6'>Change Password</h2>
                       <div className="mb-6">
-                        <TextInput type='password' placeholder='Old Password' />
+                        <TextInput type='password' placeholder='Old Password' value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} />
                       </div>
                       <div className="mb-6">
-                        <TextInput type='password' placeholder='New Password' />
+                        <TextInput type='password' placeholder='New Password' value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
                       </div>
                       <div className="mb-6">
-                        <TextInput type='password' placeholder='Confirm Password' />
+                        <TextInput type='password' placeholder='Confirm Password' value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
                       </div>
                       <div className="flex items-center justify-between">
-                        <Button color='green'>Change Password</Button>
+                        {isChangingPassword ? (
+                          <Button color='green' disabled>Changing...</Button>
+                        ) : (
+                          <Button color='green' type='submit'>Change Password</Button>
+                        )}
                       </div>
                     </form>
                   </div>

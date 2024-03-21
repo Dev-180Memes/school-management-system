@@ -5,7 +5,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import db from "@/utils/connectDb";
 import { Interface } from "readline";
 
-const JWT_SECRET: string = "FUNAAB_HIGH_SCHOL";
+const JWT_SECRET: string = "FUNAAB_HIGH_SCHOOL";
 
 interface RequestData {
     email: string,
