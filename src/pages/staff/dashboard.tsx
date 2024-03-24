@@ -40,7 +40,9 @@ interface ResultInterface {
 
 interface AssingmentInterface {
   _id: string,
-  courseTitle: string,
+  courseId: {
+    courseTitle: string
+  },
   question: string
 }
 
@@ -59,7 +61,7 @@ const Dashboard = () => {
     const token: string | null = localStorage.getItem("token");
 
     if (token) {
-      const decodedToken = decodeJWT(token) as { exp: number, id?: string, name?: string, email?: string, position?: string, account?: string }
+      const decodedToken = decodeJWT(token) as { exp: number, id?: string, name?: string, email?: string, className?: string, account?: string }
 
       const course: string = courseTitle;
       const teacherId: string | undefined = decodedToken.id;
@@ -124,7 +126,7 @@ const Dashboard = () => {
       toast.error("You need to Login");
       router.push("/staff/login");
     } else if (token) {
-      const decodedToken = decodeJWT(token) as { exp: number, id?: string, name?: string, email?: string, position?: string, account?: string }
+      const decodedToken = decodeJWT(token) as { exp: number, id?: string, name?: string, email?: string, className?: string, account?: string }
 
       if (decodedToken.account !== "staff") {
         toast.error("You are not authorized to view this page");
@@ -185,11 +187,12 @@ const Dashboard = () => {
 
   const handleChangePassword = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsChangingPassword(true);
 
     const token: string | null = localStorage.getItem("token");
 
     if (token) {
-      const decodedToken = decodeJWT(token) as { exp: number, id?: string, name?: string, email?: string, position?: string, account?: string }
+      const decodedToken = decodeJWT(token) as { exp: number, id?: string, name?: string, email?: string, className?: string, account?: string }
 
       const oldPass: string = oldPassword;
       const newPass: string = newPassword;
@@ -219,9 +222,11 @@ const Dashboard = () => {
         setOldPassword("");
         setNewPassword("");
         setConfirmPassword("");
+        setIsChangingPassword(false);
         toast.success(result.message);
       } else {
         const result = await response.json();
+        setIsChangingPassword(false);
         toast.error(result.message);
       }
     }
@@ -237,7 +242,7 @@ const Dashboard = () => {
     const token: string | null = localStorage.getItem("token")
 
     if (token) {
-      const decodedToken = decodeJWT(token) as { exp: number, id?: string, name?: string, email?: string, position?: string, account?: string }
+      const decodedToken = decodeJWT(token) as { exp: number, id?: string, name?: string, email?: string, className?: string, account?: string }
 
       const notification: string = notificationContent;
       const postedBy: string | undefined = decodedToken.id;
@@ -325,7 +330,7 @@ const Dashboard = () => {
     const token: string | null = localStorage.getItem("token");
 
     if (token) {
-      const decodedToken = decodeJWT(token) as { exp: number, id?: string, name?: string, email?: string, position?: string, account?: string }
+      const decodedToken = decodeJWT(token) as { exp: number, id?: string, name?: string, email?: string, className?: string, account?: string }
 
       const fetchResults = async () => {
         const response = await fetch(`/api/staff/result/${decodedToken.id}`, {
@@ -423,7 +428,7 @@ const Dashboard = () => {
     const token: string | null = localStorage.getItem("token");
 
     if (token) {
-      const decodedToken = decodeJWT(token) as { exp: number, id?: string, name?: string, email?: string, position?: string, account?: string }
+      const decodedToken = decodeJWT(token) as { exp: number, id?: string, name?: string, email?: string, className?: string, account?: string }
 
       const fetchAssignments = async () => {
         const response = await fetch(`/api/staff/assingment/${decodedToken.id}`, {
@@ -597,7 +602,7 @@ const Dashboard = () => {
                           {isDeletingAssignment ? (
                             <Button color={"green"} disabled>Deleting...</Button>
                           ) : (
-                            <Button color="green" onClick={handleAssignmentDelete}>Delete</Button>
+                            <Button color="green" onClick={() => handleAssignmentDelete(assignment._id)}>Delete</Button>
                           )}
                         </Table.Cell>
                       </Table.Row>

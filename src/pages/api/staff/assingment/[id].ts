@@ -7,7 +7,9 @@ import { Assignment, Course } from "@/models";
 
 interface AssignmentInterface {
     _id: string,
-    courseTitle: string,
+    courseId: {
+        courseTitle: string
+    },
     question: string,
 }
 
@@ -39,7 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
             const courseIds = courses.map(course => course._id);
 
-            const assignments = await Assignment.find({ courseId: { $in: courseIds } }).populate('courseId', 'courseTitle -_id');
+            const assignments: AssignmentInterface[] = await Assignment.find({ courseId: { $in: courseIds } }).populate('courseId', 'courseTitle -_id');
 
             return res.status(200).json({
                 message: "Fetched Assignments Successfully",
