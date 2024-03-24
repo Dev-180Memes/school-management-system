@@ -3,7 +3,6 @@ import mongoose, { Document, ObjectId } from "mongoose";
 interface IAssignment extends Document {
     courseId: ObjectId;
     question: string;
-    dueDAte: Date;
 }
 
 const AssignmentSchema = new mongoose.Schema({
@@ -13,10 +12,6 @@ const AssignmentSchema = new mongoose.Schema({
     },
     question: {
         type: String,
-        required: true
-    },
-    dueDAte: {
-        type: Date,
         required: true
     }
 })

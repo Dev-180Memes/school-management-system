@@ -38,6 +38,12 @@ interface ResultInterface {
   comment: string
 }
 
+interface AssingmentInterface {
+  _id: string,
+  courseTitle: string,
+  question: string
+}
+
 const Dashboard = () => {
   const [students, setStudents] = useState<StudentInterface[]>([]);
   const [courseTitle, setCourseTitle] = useState<string>("");
@@ -343,6 +349,104 @@ const Dashboard = () => {
     }
   }, []);
 
+  const [assignmentCourseId, setAssignmentCourseId] = useState<string>("");
+  const [assignmentQuestion, setAssignmentQuestion] = useState<string>("");
+  const [isUploadingAssignment, setIsUploadingAssignment] = useState<boolean>(false);
+  const [assignments, setAssignments] = useState<AssingmentInterface[]>([]);
+  const [isDeletingAssignment, setIsDeletingAssignment] = useState<boolean>(false);
+
+  const handleAssignmentUpload = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsUploadingAssignment(true);
+
+    const token: string | null = localStorage.getItem("token");
+
+    if (token) {
+      const courseId: string = assignmentCourseId;
+      const question: string = assignmentQuestion;
+
+      const data = {
+        courseId,
+        question,
+      }
+
+      const response = await fetch('/api/staff/assingment/add', {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(data)
+      })
+
+      if (response.status === 201) {
+        const result = await response.json();
+        setAssignmentCourseId("");
+        setAssignmentQuestion("");
+        setIsUploadingAssignment(false);
+        setAssignments(prev => [...prev, result.result]);
+        toast.success(result.message);
+      } else {
+        const result = await response.json();
+        setIsUploadingAssignment(false);
+        toast.error(result.message);
+      }
+    }
+  }
+
+  const handleAssignmentDelete = async (id: string) => {
+    setIsDeletingAssignment(true);
+
+    const token: string | null = localStorage.getItem("token");
+
+    const response = await fetch(`/api/staff/assingment/${id}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      }
+    })
+
+    if (response.status === 200) {
+      const result = await response.json();
+      setIsDeletingAssignment(false);
+      setAssignments(prev => prev.filter(assignment => assignment._id != id));
+      toast.success(result.message);
+    } else {
+      const result = await response.json();
+      setIsDeletingAssignment(false);
+      toast.error(result.message);
+    }
+  }
+
+  useEffect(() => {
+    const token: string | null = localStorage.getItem("token");
+
+    if (token) {
+      const decodedToken = decodeJWT(token) as { exp: number, id?: string, name?: string, email?: string, position?: string, account?: string }
+
+      const fetchAssignments = async () => {
+        const response = await fetch(`/api/staff/assingment/${decodedToken.id}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          }
+        })
+
+        if (response.status === 200) {
+          const result = await response.json();
+          setAssignments(result.assignments)
+        } else {
+          const result = await response.json();
+          toast.error(result.message);
+        }
+      }
+      
+      fetchAssignments();
+    }
+  }, []);
+
   return (
     <>
         <ToastContainer />
@@ -454,22 +558,25 @@ const Dashboard = () => {
                 </Tabs.Item>
                 <Tabs.Item title="Add Assingment" icon={BsBoxes}>
                   <div className="w-full max-w items-center jusify-center">
-                    <form action="" className="bg-white shadow-md rounded px-8 pt- pb-8 mb-4">
+                    <form action="" className="bg-white shadow-md rounded px-8 pt- pb-8 mb-4" onSubmit={handleAssignmentUpload} >
                       <h2 className="text-2xl font-bold mb-6">Add Assignment</h2>
                       <div className="mb-6">
-                        <Select>
-                          <option value="1">Course 1</option>
-                          <option value="2">Course 2</option>
+                        <Select value={assignmentCourseId} onChange={(e) => setAssignmentCourseId(e.target.value)}>
+                          <option value="">Select Course</option>
+                          {courses.map(course => (
+                            <option key={course._id} value={course._id}>{course.courseTitle}</option>
+                          ))}
                         </Select>
                       </div>
                       <div className="mb-6">
-                        <TextInput type='text' placeholder='Assignment Question' />
+                        <TextInput type='text' placeholder='Assignment Question' value={assignmentQuestion} onChange={(e) => setAssignmentQuestion(e.target.value)} />
                       </div>
                       <div className="mb-6">
-                        <Datepicker />
-                      </div>
-                      <div className="mb-6">
-                        <Button color={"green"}>Create Assingment</Button>
+                        {isUploadingAssignment ? (
+                          <Button color={"green"} disabled>Uploading...</Button>
+                        ) : (
+                          <Button color={"green"} type='submit'>Upload Assignment</Button>
+                        )}
                       </div>
                     </form>
                   </div>
@@ -477,20 +584,24 @@ const Dashboard = () => {
                     <Table.Head>
                       <Table.HeadCell>Course Title</Table.HeadCell>
                       <Table.HeadCell>Question</Table.HeadCell>
-                      <Table.HeadCell>Due Date</Table.HeadCell>
                       <Table.HeadCell>
                         <span className="sr-only">Delete</span>
                       </Table.HeadCell>
                     </Table.Head>
                     <Table.Body>
-                      <Table.Row>
-                        <Table.Cell>Cuorse 1</Table.Cell>
-                        <Table.Cell>Question 1</Table.Cell>
-                        <Table.Cell>Today</Table.Cell>
+                    {assignments.map((assignment, index) => (
+                      <Table.Row key={index}>
+                        <Table.Cell>{assignment.courseId.courseTitle}</Table.Cell>
+                        <Table.Cell>{assignment.question}</Table.Cell>
                         <Table.Cell>
-                          <Button color={"red"}>Delete</Button>
+                          {isDeletingAssignment ? (
+                            <Button color={"green"} disabled>Deleting...</Button>
+                          ) : (
+                            <Button color="green" onClick={handleAssignmentDelete}>Delete</Button>
+                          )}
                         </Table.Cell>
                       </Table.Row>
+                    ))}
                     </Table.Body>
                   </Table>
                 </Tabs.Item>
