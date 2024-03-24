@@ -46,6 +46,20 @@ interface AssingmentInterface {
   question: string
 }
 
+interface Submissions {
+  _id: string,
+  answer: string,
+  score: number,
+  assignmentId: {
+    _id: string,
+    question: string
+  },
+  submittedBy: {
+    _id: string,
+    name: string
+  }
+}
+
 const Dashboard = () => {
   const [students, setStudents] = useState<StudentInterface[]>([]);
   const [courseTitle, setCourseTitle] = useState<string>("");
@@ -452,6 +466,68 @@ const Dashboard = () => {
     }
   }, []);
 
+  const [submissions, setSubmissions] = useState<Submissions[]>([]);
+
+  useEffect(() => {
+    const token: string | null = localStorage.getItem("token");
+
+    if (token) {
+      const decodedToken = decodeJWT(token) as { exp: number, id?: string, name?: string, email?: string, className?: string, account?: string }
+
+      const fetchSubmissions = async () => {
+        const response = await fetch(`/api/staff/assingment/grade/${decodedToken.id}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          }
+        })
+
+        if (response.status === 200) {
+          const result = await response.json();
+          setSubmissions(result.data);
+        } else {
+          const result = await response.json();
+          toast.error(result.message);
+        }
+      }
+
+      fetchSubmissions();
+    }
+  }, []);
+
+  const [score, setScore] = useState<number>(0);
+  
+  const handleGradeSubmission = async (e: React.FormEvent<HTMLFormElement>, id: string) => {
+    e.preventDefault();
+
+    const token: string | null = localStorage.getItem("token");
+
+    if (token) {
+      const data = {
+        score
+      }
+
+      const response = await fetch(`/api/staff/assingment/grade/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(data)
+      })
+
+      if (response.status === 200) {
+        const result = await response.json();
+        toast.success(result.message);
+        window.location.reload();
+      } else {
+        const result = await response.json();
+        toast.error(result.message);
+      }
+    }
+  }
+
   return (
     <>
         <ToastContainer />
@@ -610,48 +686,26 @@ const Dashboard = () => {
                     </Table.Body>
                   </Table>
                 </Tabs.Item>
-                <Tabs.Item title="Grade Assingment" icon={BsStar}>
-                  {/* Show Individual submissions as cards. If the submission has being scored show the score if not show a form to grade it */}
+                <Tabs.Item title="Grade Assignment" icon={BsStar}>
                   <div className="flex flex-row gap-4 flex-wrap">
-                    <Card className='max-w-sm'>
-                      <h5 className='text-xl font-bold'>Question 1</h5>
-                      <span className="text-sm font-semibold">Student Name</span>
-                      <p className='text-l'>Answer: Lorem ipsum, dolor sit amet consectetur adipisicing elit. Itaque illum aliquid quis eveniet consectetur tenetur ex, modi neque voluptates sunt?</p>
-                      <span className="text-md font-semibold">Score: 70%</span>
-                    </Card>
+                    {submissions.map((submission) => (
+                      <Card key={submission._id} className='max-w-sm'>
+                        <h5 className='text-xl font-bold'>Question: {submission.assignmentId.question}</h5>
+                        <span className="text-sm font-semibold">Student Name: {submission.submittedBy.name}</span>
+                        <p className='text-l'>Answer: {submission.answer}</p>
 
-                    <Card className='max-w-sm'>
-                      <h5 className='text-xl font-bold'>Question 1</h5>
-                      <span className="text-sm font-semibold">Student Name</span>
-                      <p className='text-l'>Answer: Lorem ipsum, dolor sit amet consectetur adipisicing elit. Itaque illum aliquid quis eveniet consectetur tenetur ex, modi neque voluptates sunt?</p>
-                      {/* <span className="text-md font-semibold">Score: 70%</span> */}
-                      <form action="" className='flex flex-row gap-2'>
-                        <TextInput type='text' placeholder='Score' />
-                        <Button color={"green"}>Grade</Button>
-                      </form>
-                    </Card>
-
-                    <Card className='max-w-sm'>
-                      <h5 className='text-xl font-bold'>Question 1</h5>
-                      <span className="text-sm font-semibold">Student Name</span>
-                      <p className='text-l'>Answer: Lorem ipsum, dolor sit amet consectetur adipisicing elit. Itaque illum aliquid quis eveniet consectetur tenetur ex, modi neque voluptates sunt?</p>
-                      {/* <span className="text-md font-semibold">Score: 70%</span> */}
-                      <form action="" className='flex flex-row gap-2'>
-                        <TextInput type='text' placeholder='Score' />
-                        <Button color={"green"}>Grade</Button>
-                      </form>
-                    </Card>
-
-                    <Card className='max-w-sm'>
-                      <h5 className='text-xl font-bold'>Question 1</h5>
-                      <span className="text-sm font-semibold">Student Name</span>
-                      <p className='text-l'>Answer: Lorem ipsum, dolor sit amet consectetur adipisicing elit. Itaque illum aliquid quis eveniet consectetur tenetur ex, modi neque voluptates sunt?</p>
-                      {/* <span className="text-md font-semibold">Score: 70%</span> */}
-                      <form action="" className='flex flex-row gap-2'>
-                        <TextInput type='text' placeholder='Score' />
-                        <Button color={"green"}>Grade</Button>
-                      </form>
-                    </Card>
+                        {submission.score !== undefined ? (
+                          // If scored, show the score
+                          <span className="text-md font-semibold">Score: {submission.score}</span>
+                        ) : (
+                          // If not scored, show the form to input the score
+                          <form onSubmit={(e) => handleGradeSubmission(e, submission._id)} className='flex flex-row gap-2'>
+                            <TextInput type='number' placeholder='Score' value={score} onChange={(e) => setScore(parseInt(e.target.value))} />
+                            <Button color={"green"} type='submit'>Grade</Button>
+                          </form>
+                        )}
+                      </Card>
+                    ))}
                   </div>
                 </Tabs.Item>
                 <Tabs.Item title="Post Notifications" icon={FaEnvelope}>
